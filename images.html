@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Image / Table Right Click Modal</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+    background:#f4f6f8;
+    padding:30px;
+}
+
+h1{
+    margin-bottom:20px;
+    color:#222;
+}
+
+.container{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:20px;
+}
+
+.card{
+    background:#fff;
+    border-radius:10px;
+    padding:15px;
+    box-shadow:0 5px 15px rgba(0,0,0,.08);
+    transition:.2s;
+    cursor:pointer;
+}
+
+.card:hover{
+    transform:translateY(-4px);
+}
+
+.card img{
+    width:100%;
+    height:180px;
+    object-fit:cover;
+    border-radius:8px;
+}
+
+.card h3{
+    margin-top:10px;
+    font-size:18px;
+}
+
+.sample-table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:10px;
+}
+
+.sample-table th,
+.sample-table td{
+    border:1px solid #ccc;
+    padding:8px;
+    text-align:center;
+}
+
+.sample-table th{
+    background:#007bff;
+    color:#fff;
+}
+
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:999;
+}
+
+.modal-box{
+    width:95%;
+    max-width:700px;
+    background:#fff;
+    border-radius:10px;
+    padding:20px;
+    animation:pop .2s ease;
+}
+
+@keyframes pop{
+    from{transform:scale(.8);opacity:0;}
+    to{transform:scale(1);opacity:1;}
+}
+
+.row{
+    margin-bottom:15px;
+}
+
+label{
+    display:block;
+    margin-bottom:6px;
+    font-weight:bold;
+    color:#333;
+}
+
+input,select,textarea{
+    width:100%;
+    padding:10px;
+    border:1px solid #ccc;
+    border-radius:6px;
+    font-size:14px;
+}
+
+textarea{
+    min-height:120px;
+    resize:vertical;
+}
+
+.actions{
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+}
+
+button{
+    border:none;
+    padding:10px 18px;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.save-btn{
+    background:#28a745;
+    color:#fff;
+}
+
+.close-btn{
+    background:#dc3545;
+    color:#fff;
+}
+
+.info{
+    margin-top:8px;
+    font-size:13px;
+    color:#666;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Right Click Image / Table → Open Modal</h1>
+
+<div class="container">
+
+    <!-- IMAGE -->
+    <div class="card target-item" data-image-no="Figure 1">
+        <img src="https://picsum.photos/400/250?random=1">
+        <h3>Figure 1</h3>
+        <p>Right click this image</p>
+    </div>
+
+    <div class="card target-item" data-image-no="Figure 2">
+        <img src="https://picsum.photos/400/250?random=2">
+        <h3>Figure 2</h3>
+        <p>Right click this image</p>
+    </div>
+
+    <div class="card target-item" data-image-no="Figure 3">
+        <img src="https://picsum.photos/400/250?random=3">
+        <h3>Figure 3</h3>
+        <p>Right click this image</p>
+    </div>
+
+    <!-- TABLE -->
+    <div class="card target-item" data-image-no="Table 1">
+        <h3>Table 1</h3>
+
+        <table class="sample-table">
+            <tr>
+                <th>Name</th>
+                <th>Age</th>
+            </tr>
+            <tr>
+                <td>John</td>
+                <td>25</td>
+            </tr>
+            <tr>
+                <td>David</td>
+                <td>30</td>
+            </tr>
+        </table>
+
+        <p class="info">Right click table</p>
+    </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+    <div class="modal-box">
+
+        <div class="row">
+            <label>Image No</label>
+            <select id="imageNo"></select>
+        </div>
+
+        <div class="row">
+            <label>Type</label>
+            <input type="text" id="type">
+        </div>
+
+        <div class="row">
+            <label>Alt Text</label>
+            <textarea id="altText"></textarea>
+        </div>
+
+        <div class="row">
+            <label>Long Description</label>
+            <textarea id="longDesc"></textarea>
+        </div>
+
+        <div class="actions">
+            <button class="save-btn" onclick="saveData()">Save</button>
+            <button class="close-btn" onclick="closeModal()">Close</button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+/* ===========================
+   DATA
+=========================== */
+let content = [
+{
+    image_no:"Figure 1",
+    type:"Image (Alt-text and/or Long Description)",
+    alt_text:"",
+    alt_text_count:"",
+    long_description:""
+},
+{
+    image_no:"Figure 2",
+    type:"Image (Alt-text and/or Long Description)",
+    alt_text:"A diagram showing risky behaviors and conditions from a USPHS home accident prevention booklet (1950).",
+    alt_text_count:"250",
+    long_description:"A diagram showing risky behaviors and conditions from a USPHS home accident prevention booklet (1950)."
+},
+{
+    image_no:"Figure 3",
+    type:"Image (Alt-text and/or Long Description)",
+    alt_text:"A diagram titled The Dynamics of Home Accidents (1958).",
+    alt_text_count:"247",
+    long_description:"A diagram titled The Dynamics of Home Accidents (1958)."
+},
+{
+    image_no:"Figure 4",
+    type:"Image (Alt-text and/or Long Description)",
+    alt_text:"A blank Haddon matrix from 1972.",
+    alt_text_count:"247",
+    long_description:"A blank Haddon matrix from 1972."
+},
+{
+    image_no:"Table 1",
+    type:"Image (Alt-text and/or Long Description)",
+    alt_text:"Sample people table.",
+    alt_text_count:"20",
+    long_description:"This table contains Name and Age columns."
+}
+];
+
+let currentItem = null;
+
+/* ===========================
+   DOM
+=========================== */
+const modal = document.getElementById("modal");
+const imageNo = document.getElementById("imageNo");
+const type = document.getElementById("type");
+const altText = document.getElementById("altText");
+const longDesc = document.getElementById("longDesc");
+
+/* ===========================
+   LOAD SELECT
+=========================== */
+function loadSelect(){
+    imageNo.innerHTML = "";
+
+    content.forEach(item=>{
+        let option = document.createElement("option");
+        option.value = item.image_no;
+        option.textContent = item.image_no;
+        imageNo.appendChild(option);
+    });
+}
+
+/* ===========================
+   FILL FORM
+=========================== */
+function fillForm(selectedNo){
+    const data = content.find(x => x.image_no === selectedNo);
+    if(!data) return;
+
+    imageNo.value = data.image_no;
+    type.value = data.type;
+    altText.value = data.alt_text;
+    longDesc.value = data.long_description;
+}
+
+/* ===========================
+   OPEN MODAL
+=========================== */
+function openModal(imageNumber){
+    loadSelect();
+    fillForm(imageNumber);
+    currentItem = imageNumber;
+    modal.style.display = "flex";
+}
+
+/* ===========================
+   CLOSE MODAL
+=========================== */
+function closeModal(){
+    modal.style.display = "none";
+}
+
+/* ===========================
+   SAVE
+=========================== */
+function saveData(){
+
+    const selected = imageNo.value;
+
+    const index = content.findIndex(x => x.image_no === selected);
+
+    if(index !== -1){
+        content[index].type = type.value;
+        content[index].alt_text = altText.value;
+        content[index].alt_text_count = altText.value.length;
+        content[index].long_description = longDesc.value;
+    }
+
+    console.log("Updated Content:", content);
+
+    alert("Saved Successfully");
+    closeModal();
+}
+
+/* ===========================
+   CHANGE SELECT
+=========================== */
+imageNo.addEventListener("change", function(){
+    fillForm(this.value);
+});
+
+/* ===========================
+   RIGHT CLICK EVENT
+=========================== */
+document.querySelectorAll(".target-item").forEach(item=>{
+    item.addEventListener("contextmenu", function(e){
+        e.preventDefault();
+        const no = this.dataset.imageNo;
+        openModal(no);
+    });
+});
+
+/* ===========================
+   CLICK OUTSIDE CLOSE
+=========================== */
+modal.addEventListener("click", function(e){
+    if(e.target === modal){
+        closeModal();
+    }
+});
+</script>
+
+</body>
+</html>
