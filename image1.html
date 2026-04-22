@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Image / Table Metadata Editor</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,Helvetica,sans-serif;
+}
+body{
+    background:#f3f5f7;
+    padding:30px;
+}
+h1{
+    margin-bottom:20px;
+    color:#222;
+}
+.wrapper{
+    display:grid;
+    grid-template-columns:1fr 420px;
+    gap:25px;
+}
+.gallery{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:18px;
+}
+.card{
+    background:#fff;
+    padding:14px;
+    border-radius:10px;
+    box-shadow:0 6px 16px rgba(0,0,0,.08);
+}
+.card img{
+    width:100%;
+    height:170px;
+    object-fit:cover;
+    border-radius:8px;
+}
+.card h3{
+    margin-top:10px;
+    font-size:18px;
+}
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:10px;
+}
+th,td{
+    border:1px solid #ccc;
+    padding:8px;
+    text-align:center;
+}
+th{
+    background:#007bff;
+    color:#fff;
+}
+.panel{
+    background:#fff;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 6px 16px rgba(0,0,0,.08);
+    position:sticky;
+    top:20px;
+}
+.row{
+    margin-bottom:15px;
+}
+label{
+    display:block;
+    margin-bottom:6px;
+    font-weight:bold;
+}
+input,textarea{
+    width:100%;
+    padding:10px;
+    border:1px solid #ccc;
+    border-radius:6px;
+    font-size:14px;
+}
+textarea{
+    min-height:110px;
+    resize:vertical;
+}
+button{
+    width:100%;
+    border:none;
+    background:#28a745;
+    color:#fff;
+    padding:12px;
+    border-radius:7px;
+    cursor:pointer;
+    font-weight:bold;
+}
+button:hover{
+    background:#218838;
+}
+small{
+    color:#777;
+}
+
+/* searchable dropdown */
+.dropdown{
+    position:relative;
+}
+.dropdown-list{
+    position:absolute;
+    top:100%;
+    left:0;
+    right:0;
+    max-height:180px;
+    overflow:auto;
+    background:#fff;
+    border:1px solid #ccc;
+    border-top:none;
+    display:none;
+    z-index:100;
+}
+.dropdown-item{
+    padding:10px;
+    cursor:pointer;
+}
+.dropdown-item:hover{
+    background:#f0f0f0;
+}
+</style>
+</head>
+<body>
+
+<h1>Static Content Editor</h1>
+
+<div class="wrapper">
+
+    <!-- LEFT -->
+    <div class="gallery">
+
+        <div class="card">
+            <img src="https://picsum.photos/400/250?1">
+            <h3>Figure 1</h3>
+        </div>
+
+        <div class="card">
+            <img src="https://picsum.photos/400/250?2">
+            <h3>Figure 2</h3>
+        </div>
+
+        <div class="card">
+            <img src="https://picsum.photos/400/250?3">
+            <h3>Figure 3</h3>
+        </div>
+
+        <div class="card">
+            <img src="https://picsum.photos/400/250?4">
+            <h3>Figure 4</h3>
+        </div>
+
+        <div class="card">
+            <h3>Table 1</h3>
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th>Age</th>
+                </tr>
+                <tr>
+                    <td>John</td>
+                    <td>25</td>
+                </tr>
+                <tr>
+                    <td>David</td>
+                    <td>30</td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- RIGHT -->
+    <div class="panel">
+
+        <div class="row">
+            <label>Image No</label>
+
+            <div class="dropdown">
+                <input type="text" id="imageNo" placeholder="Type Figure / Table..." autocomplete="off">
+                <div class="dropdown-list" id="dropdownList"></div>
+            </div>
+
+            <small>Default empty. Type to search options.</small>
+        </div>
+
+        <div class="row">
+            <label>Type</label>
+            <input type="text" id="type">
+        </div>
+
+        <div class="row">
+            <label>Alt Text</label>
+            <textarea id="altText"></textarea>
+        </div>
+
+        <div class="row">
+            <label>Long Description</label>
+            <textarea id="longDesc"></textarea>
+        </div>
+
+        <button onclick="saveData()">Save</button>
+
+    </div>
+
+</div>
+
+<script>
+/* ===========================
+   STATIC CONTENT ELEMENT
+=========================== */
+let content = [
+{
+    image_no:"Figure 1",
+    type:"Image",
+    alt_text:"",
+    long_description:""
+},
+{
+    image_no:"Figure 2",
+    type:"Image",
+    alt_text:"Safety diagram image.",
+    long_description:"A diagram showing risky behaviors and conditions."
+},
+{
+    image_no:"Figure 3",
+    type:"Image",
+    alt_text:"Dynamics chart.",
+    long_description:"A chart showing accident sequence."
+},
+{
+    image_no:"Figure 4",
+    type:"Image",
+    alt_text:"Blank matrix.",
+    long_description:"A blank Haddon matrix."
+},
+{
+    image_no:"Table 1",
+    type:"Table",
+    alt_text:"People age table.",
+    long_description:"Contains Name and Age columns."
+}
+];
+
+/* ===========================
+   DOM
+=========================== */
+const imageNo = document.getElementById("imageNo");
+const type = document.getElementById("type");
+const altText = document.getElementById("altText");
+const longDesc = document.getElementById("longDesc");
+const dropdownList = document.getElementById("dropdownList");
+
+/* ===========================
+   SHOW OPTIONS
+=========================== */
+function showOptions(filter = ""){
+
+    dropdownList.innerHTML = "";
+
+    let filtered = content.filter(item =>
+        item.image_no.toLowerCase().includes(filter.toLowerCase())
+    );
+
+    if(filtered.length === 0){
+        dropdownList.style.display = "none";
+        return;
+    }
+
+    filtered.forEach(item => {
+        let div = document.createElement("div");
+        div.className = "dropdown-item";
+        div.textContent = item.image_no;
+
+        div.onclick = function(){
+            imageNo.value = item.image_no;
+            loadForm(item.image_no);
+            dropdownList.style.display = "none";
+        };
+
+        dropdownList.appendChild(div);
+    });
+
+    dropdownList.style.display = "block";
+}
+
+/* ===========================
+   LOAD FORM DATA
+=========================== */
+function loadForm(value){
+
+    const found = content.find(item => item.image_no === value);
+
+    if(!found){
+        type.value = "";
+        altText.value = "";
+        longDesc.value = "";
+        return;
+    }
+
+    type.value = found.type;
+    altText.value = found.alt_text;
+    longDesc.value = found.long_description;
+}
+
+/* ===========================
+   INPUT SEARCH
+=========================== */
+imageNo.addEventListener("input", function(){
+    showOptions(this.value);
+    loadForm(this.value);
+});
+
+imageNo.addEventListener("focus", function(){
+    showOptions(this.value);
+});
+
+/* ===========================
+   CLOSE DROPDOWN
+=========================== */
+document.addEventListener("click", function(e){
+    if(!e.target.closest(".dropdown")){
+        dropdownList.style.display = "none";
+    }
+});
+
+/* ===========================
+   SAVE DATA
+=========================== */
+function saveData(){
+
+    const key = imageNo.value.trim();
+
+    if(key === ""){
+        alert("Enter Image No");
+        return;
+    }
+
+    let index = content.findIndex(item => item.image_no === key);
+
+    if(index !== -1){
+
+        content[index].type = type.value;
+        content[index].alt_text = altText.value;
+        content[index].long_description = longDesc.value;
+
+    }else{
+
+        content.push({
+            image_no:key,
+            type:type.value,
+            alt_text:altText.value,
+            long_description:longDesc.value
+        });
+    }
+
+    console.log(content);
+    alert("Saved Successfully");
+}
+</script>
+
+</body>
+</html>
